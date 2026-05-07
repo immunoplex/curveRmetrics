@@ -1,7 +1,7 @@
 
 # curveRmetrics
 
-`curveRmetrics` is n R package designed to calculate limits of
+`curveRmetrics` is an R package designed to calculate limits of
 detection, assay sensitivity, and limits of quantification based on a
 fitted standard curve from either a Frequentist or Bayesian fit with
 their fitted parameters already calculated. This package is an extension
