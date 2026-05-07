@@ -1,0 +1,20 @@
+Package: curveRmetrics
+Title: Quality Metrics for Standard Curves from curveRfreq and stanassay
+Version: 0.0.0.9000
+Authors@R: 
+    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+Description: Computes analytical quality metrics for fitted dose-response curves
+    from immunoassay data from the frequentist package curveRfreq and the Bayesian package stanassay for fitting standard curves.
+License: AGPL (>= 3) + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports:
+    dplyr,
+    purrr,
+    tibble
+Suggests: 
+    devtools,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
