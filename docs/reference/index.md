@@ -1,0 +1,33 @@
+# Package index
+
+## All functions
+
+- [`attach_quality_metrics()`](https://immunoplex.github.io/curveRmetrics/reference/attach_quality_metrics.md)
+  : Attach quality metrics to a curves data frame
+- [`compare_quality_metrics()`](https://immunoplex.github.io/curveRmetrics/reference/compare_quality_metrics.md)
+  : Compare fitted curves and quality metrics for a single curve
+- [`compare_second_derivative()`](https://immunoplex.github.io/curveRmetrics/reference/compare_second_derivative.md)
+  : Plot the second derivative of a fitted curve for both methods
+- [`compute_assay_sensitivity()`](https://immunoplex.github.io/curveRmetrics/reference/compute_assay_sensitivity.md)
+  : Estimate assay sensitivity as the slope at the inflection point
+- [`compute_inflection_point()`](https://immunoplex.github.io/curveRmetrics/reference/compute_inflection_point.md)
+  : Add inflection-point coordinates to a curves data frame
+- [`compute_inflection_point_worker()`](https://immunoplex.github.io/curveRmetrics/reference/compute_inflection_point_worker.md)
+  : Compute the inflection point for a single curve row (worker)
+- [`compute_loqs()`](https://immunoplex.github.io/curveRmetrics/reference/compute_loqs.md)
+  : Compute limits of quantification from the second derivative
+- [`compute_mdc_rdl()`](https://immunoplex.github.io/curveRmetrics/reference/compute_mdc_rdl.md)
+  : Compute the Minimum Detectable Concentration and Reliable Detection
+  Limits
+- [`compute_second_deriv_df()`](https://immunoplex.github.io/curveRmetrics/reference/compute_second_deriv_df.md)
+  : Compute the second derivative series for all curves in a data frame
+- [`curveRmetrics`](https://immunoplex.github.io/curveRmetrics/reference/curveRmetrics-package.md)
+  [`curveRmetrics-package`](https://immunoplex.github.io/curveRmetrics/reference/curveRmetrics-package.md)
+  : curveRmetrics: Quality Metrics for Standard Curves from curveRfreq
+  and stanassay
+- [`generate_lods()`](https://immunoplex.github.io/curveRmetrics/reference/generate_lods.md)
+  : Derive lower and upper limits of detection from asymptote CI bounds
+- [`transform_ci_to_natural_units()`](https://immunoplex.github.io/curveRmetrics/reference/transform_ci_to_natural_units.md)
+  : Transform long-format parameter CI data to the natural scale
+- [`transform_to_natural_units()`](https://immunoplex.github.io/curveRmetrics/reference/transform_to_natural_units.md)
+  : Transform curve parameters to natural (untransformed) units

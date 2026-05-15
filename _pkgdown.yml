@@ -1,0 +1,5 @@
+url: https://immunoplex.github.io/curveRmetrics/
+template:
+  bootstrap: 5
+  bootswatch: flatly
+

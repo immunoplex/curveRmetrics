@@ -2,7 +2,7 @@
 % Please edit documentation in R/second_derivative.R
 \name{compute_second_deriv_df}
 \alias{compute_second_deriv_df}
-\title{Compute second derivatives for all curves in a data frame}
+\title{Compute the second derivative series for all curves in a data frame}
 \usage{
 compute_second_deriv_df(
   curves_df,
@@ -12,41 +12,49 @@ compute_second_deriv_df(
 )
 }
 \arguments{
-\item{curves_df}{Data frame of fitted curves, typically \code{freq_curves_df}
-or \code{bayes_curves_df}, containing at minimum the columns \code{curve_id},
-\code{method}, \code{model_name}, \code{a}, \code{b}, \code{c}, \code{d}, and \code{g}.}
+\item{curves_df}{A data frame with one row per \code{(curve_id, method)}
+combination.  Frequentist rows must carry raw \eqn{\log_{10}} parameter
+columns (\code{a}, \code{b}, \code{c}, \code{d}, \code{g});  Bayesian
+rows must also carry \code{*_nat} columns and a raw \code{c} column for
+the natural EC50.}
 
-\item{n_coarse}{Integer. Coarse-scan grid size passed to
-.compute_second_deriv(). Default \code{80L}.}
+\item{n_coarse}{Integer; coarse-grid resolution passed to
+\code{\link{.compute_second_deriv}} (default \code{80L}).}
 
-\item{n_refine}{Integer. Refinement grid size per bracket passed to
-.compute_second_deriv(). Default \code{80L}.}
+\item{n_refine}{Integer; refinement-grid resolution per bracket passed to
+\code{\link{.compute_second_deriv}} (default \code{80L}).}
 
-\item{verbose}{Logical. If \code{TRUE}, emits a diagnostic message for each
-curve that fails normalisation or derivative computation.}
+\item{verbose}{Logical; if \code{TRUE} (default) emits a message when the
+derivative computation fails for a curve.}
 }
 \value{
-Tibble with columns:
-\describe{
-\item{\code{curve_id}}{Curve identifier, matching \code{curves_df$curve_id}.}
-\item{\code{concentration}}{Natural-scale concentration. \code{NA} for failed
-curves.}
-\item{\code{d2x_y}}{\eqn{d^2y/dx^2} at each concentration. \code{NA} at grid
-endpoints and for failed curves.}
-}
-Endpoint \code{NA} rows are removed before returning; only interior \code{NA}
-values (from domain errors) are retained.
+A data frame (row-bound across all curves) with columns
+\code{curve_id}, \code{method}, \code{concentration} (natural scale), and
+\code{d2x_y} (\eqn{d^2(\log_{10} y)/d(\log_{10} x)^2}).  Rows with
+\code{NA} in \code{d2x_y} are dropped.
 }
 \description{
-Applies \code{\link[=.compute_second_deriv]{.compute_second_deriv()}} to every row of \code{curves_df} and
-returns the results as a single long-format tibble keyed by \code{curve_id}.
-Curves for which parameter normalisation or derivative computation fails
-are included with a single \code{NA} row so that downstream joins do not
-silently drop curve identifiers.
+Public entry point.  Iterates over unique \code{(curve_id, method)}
+combinations and calls \code{\link{.compute_second_deriv}} for each,
+returning a long-format data frame of second derivative values suitable
+for use in \code{\link{compute_loqs}}.
 }
 \details{
-The returned \code{concentration} column is always on the natural scale.
-For Bayesian curves the concentrations therefore reflect actual
-concentration units; for frequentist curves they are on the log10 scale
-(matching \code{p$c} after \code{\link[=.normalise_params]{.normalise_params()}}).
+A method-specific parameter list is built for each curve:
+
+\describe{
+\item{Frequentist}{Grid parameters use \eqn{b_{nat} = b_{raw} \cdot \ln(10)}
+and \eqn{c_{nat} = 10^{c_{raw}}}.  The \code{eval_fn} closure computes
+\eqn{d^2(\log_{10} y)/d(\log_{10} x)^2} via
+\code{log10(10^.evaluate_curve(p_raw, log10(x)))}.}
+\item{Bayesian}{Grid parameters use \eqn{b_{nat} = 1/b_{raw}} and the
+raw natural EC50 \eqn{c_{raw}}.  The \code{eval_fn} closure computes
+\eqn{d^2(\log_{10} y)/d(\log_{10} x)^2} via
+\code{log10(.evaluate_curve(p_nat, log(x)))}.}
+}
+
+\code{local()} is used when constructing each \code{eval_fn} to force
+eager capture of \code{p_raw} / \code{p_nat}, preventing R's
+lazy-evaluation scoping from causing all closures to share the same
+(final-iteration) environment.
 }

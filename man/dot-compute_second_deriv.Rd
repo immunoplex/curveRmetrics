@@ -2,38 +2,46 @@
 % Please edit documentation in R/second_derivative.R
 \name{.compute_second_deriv}
 \alias{.compute_second_deriv}
-\title{Compute an adaptive numerical second derivative for a single curve}
+\title{Three-pass adaptive numerical second derivative for a single curve}
 \usage{
 .compute_second_deriv(p, n_coarse = 80L, n_refine = 80L)
 }
 \arguments{
-\item{p}{Named list as returned by .normalise_params().  Must
-contain \code{family}, \code{a}, \code{b}, \code{c}, \code{d}, and \code{g}.}
+\item{p}{A named list of natural-scale curve parameters including a
+\code{family} string, \code{b}, \code{c}, \code{g}, and an
+\code{eval_fn} closure that maps concentration to response (see
+\code{\link{compute_second_deriv_df}}).}
 
-\item{n_coarse}{Integer. Number of points in the initial coarse scan.
-Default \code{80L}.}
+\item{n_coarse}{Integer; number of points in the initial coarse grid
+(default \code{80L}).}
 
-\item{n_refine}{Integer. Number of points per refinement bracket.
-Default \code{80L}.}
+\item{n_refine}{Integer; number of points added inside each refinement
+bracket (default \code{80L}).}
 }
 \value{
-Tibble with columns:
-\describe{
-\item{\code{concentration}}{Natural-scale concentration values.}
-\item{\code{d2x_y}}{\eqn{d^2y/dx^2} evaluated at each concentration.
-\code{NA} at the two endpoints of each grid segment.}
-}
+A \code{\link[tibble:tibble]{tibble}} with columns
+\code{concentration} (natural scale) and \code{d2x_y}
+(\eqn{d^2y/du^2}).
 }
 \description{
-Evaluates \eqn{d^2y/dx^2} over a family-appropriate concentration range
-using a three-pass adaptive grid: a coarse scan to locate candidate
-extrema, analytical seed brackets to ensure the LOQ shoulders are captured,
-and a dense refinement pass inside each detected bracket.
+Computes \eqn{d^2y/du^2} (\eqn{u = \log_{10}(x)}) over a family-derived
+concentration grid using three passes:
 }
 \details{
-All output concentrations and second-derivative values are on the
-natural-concentration axis regardless of whether the curve was evaluated
-internally on a log10 grid; .d2y_nonuniform() handles the Jacobian
-correction automatically.
+\enumerate{
+\item \strong{Coarse pass} — \code{n_coarse} evenly spaced
+\eqn{\log_{10}(x)} points across the family bounds from
+\code{\link{.sderiv_scale}}.
+\item \strong{Seed brackets} — \code{\link{.sderiv_seeds}} provides
+analytical estimates of the extremum locations; each seed is bracketed
+by ±4 coarse grid spacings.
+\item \strong{Refinement} — \code{n_refine} dense points are placed
+inside every bracket detected from both the coarse pass sign-changes
+(\code{\link{.sderiv_brackets}}) and the seed brackets.
+}
+
+All three pass grids are merged, deduplicated, and evaluated in a single
+call to \code{\link{.sderiv_eval_vec}}, after which
+\code{\link{.d2y_nonuniform}} computes the final derivative series.
 }
 \keyword{internal}
