@@ -2,20 +2,33 @@
 % Please edit documentation in R/parameter_normalization_functions.R
 \name{.evaluate_curve}
 \alias{.evaluate_curve}
-\title{Evaluate the forward curve at a given concentration}
+\title{Evaluate a dose-response curve at a given concentration}
 \usage{
 .evaluate_curve(p, x)
 }
 \arguments{
-\item{p}{Named list with family, a, b, c, d, g}
+\item{p}{A named list of curve parameters with elements \code{family},
+\code{a}, \code{b}, \code{c}, \code{d}, and \code{g}.}
 
-\item{x}{Numeric scalar or vector, natural concentration}
+\item{x}{Numeric; concentration value(s) at which to evaluate the curve.}
 }
 \value{
-Numeric vector of predicted response values
+Numeric; predicted response value(s).
 }
 \description{
-All parameters and x are on the natural scale.
-Matches functional forms in model_functions.R exactly.
+All parameters and \code{x} are expected on the \strong{natural scale}
+(\code{c} = natural EC50, \code{x} = natural concentration).  The
+\eqn{\log(x/c)/b} substitution is used throughout so that the formulas
+accept raw concentration directly.
+}
+\details{
+Supported families:
+\describe{
+\item{logistic4}{\eqn{y = d + (a-d) / (1 + \exp((x-c)/b))}}
+\item{logistic5}{\eqn{y = d + (a-d) / (1 + \exp((x-c)/b))^g}}
+\item{loglogistic4}{\eqn{y = a + (d-a) / (1 + (x/c)^b)}}
+\item{loglogistic5}{\eqn{y = a + (d-a)(1 + g\exp(-b(x-c)))^{-1/g}}}
+\item{gompertz4}{\eqn{y = a + (d-a)\exp(-\exp(-b(x-c)))}}
+}
 }
 \keyword{internal}

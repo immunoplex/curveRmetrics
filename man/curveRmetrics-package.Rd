@@ -8,7 +8,21 @@
 \description{
 Computes analytical quality metrics for fitted dose-response curves from immunoassay data from the frequentist package curveRfreq and the Bayesian package stanassay for fitting standard curves.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/immunoplex/curveRmetrics}
+  \item \url{https://immunoplex.github.io/curveRmetrics}
+}
+
+}
 \author{
-\strong{Maintainer}: First Last \email{first.last@example.com}
+\strong{Maintainer}: Michael Scot Zens \email{michael.s.zens@dartmouth.edu}
+
+Authors:
+\itemize{
+  \item Seamus O. Stein \email{seamusstein@gmail.com}
+  \item Anne G. Hoen \email{anne.g.hoen@dartmouth.edu}
+}
 
 }

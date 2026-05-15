@@ -1,10 +1,20 @@
 Package: curveRmetrics
 Title: Quality Metrics for Standard Curves from curveRfreq and stanassay
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+Authors@R: c(
+    person("Seamus O.", "Stein",
+           email = "seamusstein@gmail.com",
+           role ="aut"),
+    person("Michael Scot", "Zens",
+           email = "michael.s.zens@dartmouth.edu",
+           role = c("aut", "cre")),
+    person("Anne G.", "Hoen",
+           email = "anne.g.hoen@dartmouth.edu",
+           role = "aut")
+  )
 Description: Computes analytical quality metrics for fitted dose-response curves
     from immunoassay data from the frequentist package curveRfreq and the Bayesian package stanassay for fitting standard curves.
+URL: https://github.com/immunoplex/curveRmetrics, https://immunoplex.github.io/curveRmetrics
 License: AGPL (>= 3) + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -12,7 +22,9 @@ RoxygenNote: 7.3.3
 Imports:
     dplyr,
     purrr,
-    tibble
+    tibble,
+    ggplot2,
+    magrittr
 Suggests: 
     devtools,
     knitr,

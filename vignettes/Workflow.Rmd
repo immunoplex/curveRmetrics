@@ -24,71 +24,105 @@ if (file.exists(script_path)) {
 }
 conn <- get_db_connection()
 
-freq_curves_df  <- get_freq_curves(conn)
-bayes_curves_df <- get_bayes_curves(conn)
-bayes_param_ci_df <- get_bayes_param_ci(conn)
-freq_param_ci_df <- get_freq_parameters(conn)
+freq_curves_df  <- get_freq_curves(conn, "curveTest2")
+bayes_curves_df <- get_bayes_curves(conn, "curveTest2")
+bayes_param_ci_df <- get_bayes_param_ci(conn, "curveTest2")
+freq_param_ci_df <- get_freq_parameters(conn, "curveTest2")
+standards <- get_standards(conn, "curveTest2")
+
 ```
+
+
+```{r}
+# combine both the Frequentest and Bayesian curves together for quality metrics
+# calculations and comparisons. 
+curves_df <- rbind(freq_curves_df, bayes_curves_df)
+# naturalize the parameters
+curves_nat <- curves_df %>%
+  transform_to_natural_units()
+
+head(curves_nat)
+```
+
+Select a specific `curve_id` to visualize comparisions. The `curveRmetrics`
+package will compute Quality Control (QC) metrics for each `curve_id` in the 
+naturalized parameter set (`curves_nat`).
 
 ## Compute Inflection Point 
 
 ```{r}
-freq_curves_df  <- compute_inflection_point(freq_curves_df)
-bayes_curves_df <- compute_inflection_point(bayes_curves_df)
-
-head(freq_curves_df)
+nat_params <- compute_inflection_point(curves_nat, verbose = F)
+head(nat_params)
 ```
 
 ## Assay Sensitivity 
 ```{r}
-freq_sens <-compute_assay_sensitivity(freq_curves_df)
-bayes_sens <- compute_assay_sensitivity(bayes_curves_df)
-
-head(freq_sens)
+nat_sens <- compute_assay_sensitivity(nat_params, verbose = T)
+head(nat_sens)
 ```
 
-# Limits of Detection
+## Limits of Detection
+
+First the raw confidence/credible intervals and parameters are transformed to natural units and combined together in one dataset
+for comparison.
 ```{r}
-lods <-generate_lods(freq_param_ci_df)
-bayes_lod <- generate_lods(bayes_param_ci_df)
-head(bayes_lod)
+bayes_param_ci_nat <- transform_ci_to_natural_units(bayes_param_ci_df)
+freq_param_ci_nat <- transform_ci_to_natural_units(freq_param_ci_df)
+
+params_ci_nat <- rbind(freq_param_ci_nat, bayes_param_ci_nat)
+params_ci_nat
 ```
+
 ```{r}
-freq_rdl_tbl <- compute_mdc_rdl(freq_param_ci_df, lods = lods)
+lods_nat <- generate_lods(param_ci_df = params_ci_nat, verbose = T)
+lods_nat
+```
 
-bayes_rdl_tbl <- compute_mdc_rdl(bayes_param_ci_df, lods = bayes_lod)
+## Reliable Detection Limits
 
-head(freq_rdl_tbl)
+```{r}
+rdl_nat <- compute_mdc_rdl(param_ci_df = params_ci_nat, lods = lods_nat, verbose = F)
+head(rdl_nat)
 ```
 
 ## Limits of Quantification
 ### Curvature-Based
 
 ```{r}
-d2_freq <- compute_second_deriv_df(curves_df = freq_curves_df)
-
-d2_bayes <- compute_second_deriv_df(curves_df = bayes_curves_df)
+d2_natural <- compute_second_deriv_df(curves_df = curves_nat)
+head(d2_natural)
 ```
+
+```{r, fig.width = 14, fig.height = 8, out.width = "100%"}
+curve_id <- 74238
+
+compare_second_derivative(second_derivative_df = d2_natural, curve_id = curve_id)
+```
+
+Calculate the shaped-based Limits of Quantification (LOQs) from the second derivative
 
 ```{r}
-freq_loqs <- compute_loqs(freq_curves_df, second_deriv_df = d2_freq)
-
-bayes_loqs <- compute_loqs(bayes_curves_df, second_deriv_df = d2_bayes)
-
-head(bayes_loqs)
+loqs_nat <- compute_loqs(curves_nat, second_deriv_df = d2_natural, verbose = F)
+head(loqs_nat)
 ```
 
-## Attach Quality metrics on the log scale for plotting and uploading back to database.
+## Attach Quality metrics to the original curve dataframe for plotting and uploading back to database.
 ```{r}
-qc_freq <-attach_quality_metrics(freq_curves_df, lods, rdls = freq_rdl_tbl, 
-                                 sensitivity = freq_sens,
-                                 loqs = freq_loqs)
+curves_quality_df <-attach_quality_metrics(curves_df = curves_df,
+                                           lods = lods_nat, 
+                                           rdls = rdl_nat,
+                                           sensitivity = nat_sens,
+                                           loqs = loqs_nat, 
+                                           inflection = nat_params)
 
-qc_bayes <-attach_quality_metrics(bayes_curves_df, lods = bayes_lod, 
-                                  rdls = bayes_rdl_tbl, 
-                                  sensitivity = bayes_sens, 
-                                  loqs = bayes_loqs)
-
-head(qc_freq)
+head(curves_quality_df)
 ```
+
+
+```{r, fig.width = 14, fig.height = 10, out.width = "100%"}
+compare_quality_metrics(curves_nat, standards, curves_quality_df, curve_id = curve_id)
+```
+
+
+
 

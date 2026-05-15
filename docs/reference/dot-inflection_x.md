@@ -1,0 +1,77 @@
+# Compute analytical inflection x-coordinate from normalised parameters
+
+All inputs are assumed to be on the natural concentration scale.
+Derivations:
+
+Finds the natural-scale concentration \\x^\*\\ at which the second
+derivative of the curve is zero (i.e. the point of maximum slope). All
+returned values are natural concentrations.
+
+## Usage
+
+``` r
+.inflection_x(p)
+
+.inflection_x(p)
+```
+
+## Arguments
+
+- p:
+
+  A named list of natural-scale curve parameters (see
+  [`.evaluate_curve`](https://immunoplex.github.io/curveRmetrics/reference/dot-evaluate_curve.md)).
+
+## Value
+
+Numeric scalar, inflection x on natural concentration scale
+
+Numeric scalar; natural-scale concentration at the inflection point.
+Falls back to `c` with a warning when the analytical condition cannot be
+satisfied.
+
+## Details
+
+logistic4: y = d + (a-d) / (1 + exp((x-c)/b)) Symmetric =\> inflection
+exactly at x = c, y = (a+d)/2
+
+logistic5: y = d + (a-d) / (1 + exp((x-c)/b))^g Set d²y/dx² = 0: let z =
+exp((x-c)/b) Numerator of d²y/dx² proportional to: (g+1)*z -
+(b-1)/(b*... ) Full derivation =\> z\* = (b-1) / (b*g + 1) requires b \>
+1 and z* \> 0 =\> x_infl = c + b \* log(z\*)
+
+loglogistic4: y = a + (d-a) / (1 + (x/c)^b) Symmetric on log(x) scale
+=\> inflection at x = c
+
+loglogistic5: y = a + (d-a) \* (1 + g*exp(-b*(x-c)))^(-1/g) Set d²y/dx²
+= 0: let u = g*exp(-b*(x-c)) =\> u\* = (b-1)/(b+1) ... simplified
+Richards condition requires b \> 1 =\> x_infl = c - (log(u\*) - log(g))
+/ b = c + (log(g) - log((b-1)/(b+1))) / b
+
+gompertz4: y = a + (d-a) \* exp(-exp(-b\*(x-c))) Set d²y/dx² = 0: let u
+= exp(-b\*(x-c)) =\> u\*(1 - u) = 1/b ... simplifies to u\* = (b-1)/b
+(requires b \> 1) =\> x_infl = c - log(u\*) / b = c + log(b/(b-1)) / b
+At inflection: y_infl = a + (d-a)\*exp(-1) (always ~36.8% of range from
+a)
+
+Derivations use the substitution \\t = \ln(x/c)\\:
+
+- logistic4:
+
+  Symmetric \\\Rightarrow x^\* = c\\.
+
+- logistic5:
+
+  \\z^\* = (b-1)/(bg+1)\\, \\x^\* = c \cdot z^{\*1/b}\\.
+
+- loglogistic4:
+
+  Symmetric \\\Rightarrow x^\* = c\\.
+
+- loglogistic5:
+
+  \\u^\* = (b-1)/(b+1)\\, \\x^\* = c \exp((\ln g - \ln u^\*)/b)\\.
+
+- gompertz4:
+
+  \\u^\* = (b-1)/b\\, \\x^\* = c \exp(-\ln u^\*/b)\\.

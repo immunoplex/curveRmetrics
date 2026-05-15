@@ -1,0 +1,18 @@
+# curveRmetrics
+
+`curveRmetrics` is an R package designed to calculate limits of
+detection, assay sensitivity, and limits of quantification based on a
+fitted standard curve from either a Frequentist or Bayesian fit with
+their fitted parameters already calculated. This package is an extension
+off of `curveRfreq` in which a Frequentist approach is used to fit
+standard curves or `stanassay` in which standard curves are fitted using
+a Bayesian approach.
+
+## Installation
+
+The package is not yet on CRAN but can be installed directly from the
+repository.
+
+``` r
+devtools::install_github("immunoplex/curveRmetrics")
+```

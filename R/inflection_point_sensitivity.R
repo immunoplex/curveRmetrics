@@ -190,10 +190,10 @@ compute_inflection_point <- function(curves_df) {
 #' log10-concentration).
 #'
 #' The inflection x-coordinate is taken directly from `curves_df$inflect_x`;
-#' run [compute_inflection_point()] on the data frame first.
+#' run compute_inflection_point() on the data frame first.
 #'
 #' @param curves_df Data frame of fitted curves with an `inflect_x` column,
-#'   as produced by [compute_inflection_point()].
+#'   as produced by compute_inflection_point().
 #' @param verbose Logical. If `TRUE`, emits one diagnostic message per curve.
 #'
 #' @return Tibble with columns:

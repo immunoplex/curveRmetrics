@@ -2,42 +2,35 @@
 % Please edit documentation in R/parameter_normalization_functions.R
 \name{.normalise_params}
 \alias{.normalise_params}
-\title{Normalise a database row to a common parameter representation}
+\title{Normalise a single DB row to a natural-scale parameter list}
 \usage{
-.normalise_params(row, method)
+.normalise_params(row, method, verbose = FALSE)
 }
 \arguments{
-\item{row}{Single-row data frame or named list containing at minimum the
-columns/elements \code{model_name}, \code{a}, \code{b}, \code{c}, \code{d}, \code{g}.}
+\item{row}{A single-row data frame (or named list) with curve parameters.}
 
-\item{method}{Character scalar. Either \code{"frequentist"} or \code{"bayesian"}.}
+\item{method}{Character; either \code{"frequentist"} or \code{"bayesian"}.}
+
+\item{verbose}{Logical; if \code{TRUE} (default \code{FALSE}) emits a
+message when natural-scale columns are detected and used.}
 }
 \value{
-Named list with elements:
-\describe{
-\item{\code{family}}{Canonical family string from .canonical_family().}
-\item{\code{a}}{Lower asymptote (response scale).}
-\item{\code{b}}{Scale/slope parameter, log10-concentration domain.}
-\item{\code{c}}{Inflection-point concentration, log10 scale.}
-\item{\code{d}}{Upper asymptote (response scale).}
-\item{\code{g}}{Asymmetry parameter; 1 for symmetric 4-parameter models.}
-\item{\code{source}}{Character, echoes \code{method}.}
-}
+A named list with elements \code{family}, \code{a}, \code{b},
+\code{c}, \code{d}, \code{g}, and \code{source}.
 }
 \description{
-Converts a single-row data frame or named list from \code{freq_curves} or
-\code{bayes_curves} into a unified named list used by all downstream functions.
+Prefers pre-computed \code{*_nat} columns produced by
+\code{\link{transform_to_natural_units}} when they are present on \code{row}
+(i.e. when called with \code{curves_nat}).  Falls back to raw DB columns
+plus inline conversion otherwise.
 }
 \details{
-Scale conventions after normalisation:
-\itemize{
-\item \strong{Frequentist} — \code{c} is on the log10-concentration scale, as
-stored in the database; \code{b} is the scale parameter in log10 units.
-\item \strong{Bayesian} — \code{c} is converted from natural-scale EC50
-(concentration units) to log10 via \code{log10(c)}; \code{b} is rescaled from
-the natural-log domain stored by Stan to log10 via \code{b / log(10)}.
-Both \code{c} and \code{x} are therefore on the same log10 scale when passed to
-.evaluate_curve()] or .invert_curve().
+Either way the returned list has an identical structure and scale:
+\describe{
+\item{a, d}{Natural-scale response asymptotes.}
+\item{b}{Hill slope on the \eqn{\ln(x)} scale.}
+\item{c}{Natural-scale EC50 (concentration units).}
+\item{g}{Dimensionless asymmetry/shape parameter.}
 }
 }
 \keyword{internal}
