@@ -1,4 +1,58 @@
-# Workflow
+# Computing Standard Curve Quality Control Metrics using curveRmetrics
+
+## Overview
+
+This vignette demonstrates the end-to-end `curveRmetrics` workflow for
+evaluating standarded curve quality. Starting from raw Frequentist and
+Bayesian curve fits stored in a database, we derive a standardized set
+of Quality Control (QC) metrics:
+
+- **Inflection point** — The point on the standard curve where the
+  concavity transitions from concave up to concave down. It is the point
+  where the assay is most sensitive to measurement errors in the
+  measured response of the assay.
+
+- **Assay sensitivity** — Measured by the slope of the inflection point.
+
+- **Limits of Detection (LODs)** — Lower and upper LODs are defined as
+  the upper 97.5% confidence bound of the lower asymptote and the lower
+  2.5% confidence bound of the upper asymptote, respectively (Rajam et
+  al.).
+
+- **Reliable Detection Limits (RDLs)** - Lower RDL: The lowest
+  concentration at which the assay consistently produces a signal above
+  background with 95% confidence based on the fit of the standard curve
+  (Rajam et al.). Upper RDL: Analogously, the highest concentration at
+  which the assay consistently produces a signal below the upper
+  asymptote (saturation) with 95% confidence, based on the fit of the
+  standard curve.
+
+- **Minimum Detectable Concentration** - The smallest antibody
+  concentration that produces a signal the assay can detect above
+  background (Rajam et al.). This corresponds to the x-coordinate of the
+  Lower Limit of Detection in the legend, as it is on the concentration
+  axis.
+
+- **Limits of Quantification (LOQ)** - Defines a region of assay
+  response (MFI) and concentration where sample estimates have less
+  measurement error. Limits of Quantification are derived from the local
+  minimum and maximum of the second derivative of x given y of the
+  standard curve (Daly et al.), (Jeanne L Sebaugh and P. D. McCray) ,
+  (Sanz et al.).
+
+All metrics are computed in natural (back-transformed) parameter units
+so that results are directly interpretable and comparable across fitting
+methods.
+
+## Setup: Load Curve Data from Database
+
+We load Frequentist and Bayesian curve fits for the `curveTest2` study
+containing data from ELISA immunoassays, along with their parameter
+confidence/credible intervals and assay standards. Other studies or
+similar fit data from standard curves can be used as input as long as
+they follow the functional forms from accompanying `curveRfreq` or
+`stanassay` R packages. Curve fits from multiplex bead arrays and other
+immunoassays with a standard curve can be used.
 
 ``` r
 devtools::load_all()
@@ -29,6 +83,11 @@ freq_param_ci_df <- get_freq_parameters(conn, "curveTest2")
 standards <- get_standards(conn, "curveTest2")
 ```
 
+Curve fit results from both Frequentist and Bayesian fitting methods are
+combined into a single data frame so that all downstream QC functions
+operate on Frequentist and Bayesian curves simultaneously, enabling
+direct method comparisons.
+
 ``` r
 # combine both the Frequentest and Bayesian curves together for quality metrics
 # calculations and comparisons. 
@@ -50,9 +109,17 @@ head(curves_nat)
 #> # ℹ 2 more variables: d_nat <dbl>, g_nat <dbl>
 ```
 
-Select a specific `curve_id` to visualize comparisions. The
+**Note:**
+[`transform_to_natural_units()`](https://immunoplex.github.io/curveRmetrics/reference/transform_to_natural_units.md)
+back-transforms four curve parameters (`a`, `b`, `c`, `d`) from their
+fitted scales to natural units.
+
+Select a specific `curve_id` to visualize comparisons. The
 `curveRmetrics` package will compute Quality Control (QC) metrics for
 each `curve_id` in the naturalized parameter set (`curves_nat`).
+
+The `verbose` argument in the `curveRmetrics` shows QC output messages.
+To hide these messages set `verbose` to `FALSE`.
 
 ## Compute Inflection Point
 
@@ -143,6 +210,8 @@ params_ci_nat
 #> #   conf_lower_nat <dbl>, conf_upper_nat <dbl>
 ```
 
+The limits of detection are then calculated.
+
 ``` r
 lods_nat <- generate_lods(param_ci_df = params_ci_nat, verbose = T)
 #> [generate_lods] curve_id=74233 (frequentist)  LLOD=0.0557  ULOD=2.9417
@@ -209,7 +278,10 @@ head(rdl_nat)
 
 ## Limits of Quantification
 
-### Curvature-Based
+### Curvature-Based Approach
+
+We first compute the second derivative across the concentration range
+for all curves then select a `curve_id` of interest for comparision.:
 
 ``` r
 d2_natural <- compute_second_deriv_df(curves_df = curves_nat)
@@ -233,8 +305,8 @@ compare_second_derivative(second_derivative_df = d2_natural, curve_id = curve_id
 
 ![](Workflow_files/figure-html/unnamed-chunk-9-1.png)
 
-Calculate the shaped-based Limits of Quantification (LOQs) from the
-second derivative
+We then calculate the shaped-based Limits of Quantification (LOQs) from
+the second derivative profile for all curves:
 
 ``` r
 loqs_nat <- compute_loqs(curves_nat, second_deriv_df = d2_natural, verbose = F)
@@ -250,7 +322,11 @@ head(loqs_nat)
 #> 6    74237 frequentist 946.   9086. 0.0481 0.118
 ```
 
-## Attach Quality metrics to the original curve dataframe for plotting and uploading back to database.
+## Quality Control Summary amd Comparision
+
+All quality control metrics computed above are attached to the original
+curve data frame. The enriched object (`curves_quality_df`) is suitable
+for both visualization and uploading results back to the database.
 
 ``` r
 curves_quality_df <-attach_quality_metrics(curves_df = curves_df,
@@ -290,6 +366,9 @@ head(curves_quality_df)
 #> 5 0.07652535
 #> 6 0.07943149
 ```
+
+Quality Control thresholds and limits for a curve can be plotted
+enabling a comparison of Frequentist and Bayesian fits.
 
 ``` r
 compare_quality_metrics(curves_nat, standards, curves_quality_df, curve_id = curve_id)

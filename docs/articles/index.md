@@ -2,4 +2,5 @@
 
 ### All vignettes
 
-- [Workflow](https://immunoplex.github.io/curveRmetrics/articles/Workflow.md):
+- [Computing Standard Curve Quality Control Metrics using
+  curveRmetrics](https://immunoplex.github.io/curveRmetrics/articles/Workflow.md):

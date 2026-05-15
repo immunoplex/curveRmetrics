@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Workflow • curveRmetrics</title>
+<title>Computing Standard Curve Quality Control Metrics using curveRmetrics • curveRmetrics</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Computing Standard Curve Quality Control Metrics using curveRmetrics">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -33,7 +33,7 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/Workflow.html">Workflow</a></li>
+<li><a class="dropdown-item" href="../articles/Workflow.html">Computing Standard Curve Quality Control Metrics using curveRmetrics</a></li>
   </ul>
 </li>
       </ul>
@@ -55,7 +55,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Workflow</h1>
+      <h1>Computing Standard Curve Quality Control Metrics using curveRmetrics</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/immunoplex/curveRmetrics/blob/HEAD/vignettes/Workflow.Rmd" class="external-link"><code>vignettes/Workflow.Rmd</code></a></small>
@@ -64,6 +64,58 @@
 
     
     
+<div class="section level2">
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h2>
+<p>This vignette demonstrates the end-to-end <code>curveRmetrics</code>
+workflow for evaluating standarded curve quality. Starting from raw
+Frequentist and Bayesian curve fits stored in a database, we derive a
+standardized set of Quality Control (QC) metrics:</p>
+<ul>
+<li><p><strong>Inflection point</strong> — The point on the standard
+curve where the concavity transitions from concave up to concave down.
+It is the point where the assay is most sensitive to measurement errors
+in the measured response of the assay.</p></li>
+<li><p><strong>Assay sensitivity</strong> — Measured by the slope of the
+inflection point.</p></li>
+<li><p><strong>Limits of Detection (LODs)</strong> — Lower and upper
+LODs are defined as the upper 97.5% confidence bound of the lower
+asymptote and the lower 2.5% confidence bound of the upper asymptote,
+respectively (Rajam et al.).</p></li>
+<li><p><strong>Reliable Detection Limits (RDLs)</strong> - Lower RDL:
+The lowest concentration at which the assay consistently produces a
+signal above background with 95% confidence based on the fit of the
+standard curve (Rajam et al.). Upper RDL: Analogously, the highest
+concentration at which the assay consistently produces a signal below
+the upper asymptote (saturation) with 95% confidence, based on the fit
+of the standard curve.</p></li>
+<li><p><strong>Minimum Detectable Concentration</strong> - The smallest
+antibody concentration that produces a signal the assay can detect above
+background (Rajam et al.). This corresponds to the x-coordinate of the
+Lower Limit of Detection in the legend, as it is on the concentration
+axis.</p></li>
+<li><p><strong>Limits of Quantification (LOQ)</strong> - Defines a
+region of assay response (MFI) and concentration where sample estimates
+have less measurement error. Limits of Quantification are derived from
+the local minimum and maximum of the second derivative of x given y of
+the standard curve (Daly et al.), (Jeanne L Sebaugh and P. D. McCray) ,
+(Sanz et al.).</p></li>
+</ul>
+<p>All metrics are computed in natural (back-transformed) parameter
+units so that results are directly interpretable and comparable across
+fitting methods.</p>
+</div>
+<div class="section level2">
+<h2 id="setup-load-curve-data-from-database">Setup: Load Curve Data from Database<a class="anchor" aria-label="anchor" href="#setup-load-curve-data-from-database"></a>
+</h2>
+<p>We load Frequentist and Bayesian curve fits for the
+<code>curveTest2</code> study containing data from ELISA immunoassays,
+along with their parameter confidence/credible intervals and assay
+standards. Other studies or similar fit data from standard curves can be
+used as input as long as they follow the functional forms from
+accompanying <code>curveRfreq</code> or <code>stanassay</code> R
+packages. Curve fits from multiplex bead arrays and other immunoassays
+with a standard curve can be used.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/load_all.html" class="external-link">load_all</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Loading <span style="color: #0000BB;">curveRmetrics</span></span></span>
@@ -91,6 +143,10 @@
 <span><span class="va">bayes_param_ci_df</span> <span class="op">&lt;-</span> <span class="fu">get_bayes_param_ci</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"curveTest2"</span><span class="op">)</span></span>
 <span><span class="va">freq_param_ci_df</span> <span class="op">&lt;-</span> <span class="fu">get_freq_parameters</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"curveTest2"</span><span class="op">)</span></span>
 <span><span class="va">standards</span> <span class="op">&lt;-</span> <span class="fu">get_standards</span><span class="op">(</span><span class="va">conn</span>, <span class="st">"curveTest2"</span><span class="op">)</span></span></code></pre></div>
+<p>Curve fit results from both Frequentist and Bayesian fitting methods
+are combined into a single data frame so that all downstream QC
+functions operate on Frequentist and Bayesian curves simultaneously,
+enabling direct method comparisons.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># combine both the Frequentest and Bayesian curves together for quality metrics</span></span>
 <span><span class="co"># calculations and comparisons. </span></span>
@@ -110,10 +166,18 @@
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>    <span style="text-decoration: underline;">74</span>238 frequ… logistic4  -<span style="color: #BB0000;">1.36</span> 0.346  1.88  0.690 <span style="color: #BB0000;">NA</span>       76.4 0.796 0.043<span style="text-decoration: underline;">3</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>    <span style="text-decoration: underline;">74</span>237 frequ… logistic4  -<span style="color: #BB0000;">1.46</span> 0.373  3.47 -<span style="color: #BB0000;">0.784</span> <span style="color: #BB0000;">NA</span>     <span style="text-decoration: underline;">2</span>931.  0.859 0.034<span style="text-decoration: underline;">6</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: d_nat &lt;dbl&gt;, g_nat &lt;dbl&gt;</span></span></span></code></pre></div>
-<p>Select a specific <code>curve_id</code> to visualize comparisions.
-The <code>curveRmetrics</code> package will compute Quality Control (QC)
+<p><strong>Note:</strong> <code><a href="../reference/transform_to_natural_units.html">transform_to_natural_units()</a></code>
+back-transforms four curve parameters (<code>a</code>, <code>b</code>,
+<code>c</code>, <code>d</code>) from their fitted scales to natural
+units.</p>
+<p>Select a specific <code>curve_id</code> to visualize comparisons. The
+<code>curveRmetrics</code> package will compute Quality Control (QC)
 metrics for each <code>curve_id</code> in the naturalized parameter set
 (<code>curves_nat</code>).</p>
+<p>The <code>verbose</code> argument in the <code>curveRmetrics</code>
+shows QC output messages. To hide these messages set
+<code>verbose</code> to <code>FALSE</code>.</p>
+</div>
 <div class="section level2">
 <h2 id="compute-inflection-point">Compute Inflection Point<a class="anchor" aria-label="anchor" href="#compute-inflection-point"></a>
 </h2>
@@ -201,6 +265,7 @@ comparison.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 92 more rows</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: is_best_model &lt;lgl&gt;, estimate_nat &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   conf_lower_nat &lt;dbl&gt;, conf_upper_nat &lt;dbl&gt;</span></span></span></code></pre></div>
+<p>The limits of detection are then calculated.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lods_nat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_lods.html">generate_lods</a></span><span class="op">(</span>param_ci_df <span class="op">=</span> <span class="va">params_ci_nat</span>, verbose <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [generate_lods] curve_id=74233 (frequentist)  LLOD=0.0557  ULOD=2.9417</span></span>
@@ -268,8 +333,11 @@ comparison.</p>
 <h2 id="limits-of-quantification">Limits of Quantification<a class="anchor" aria-label="anchor" href="#limits-of-quantification"></a>
 </h2>
 <div class="section level3">
-<h3 id="curvature-based">Curvature-Based<a class="anchor" aria-label="anchor" href="#curvature-based"></a>
+<h3 id="curvature-based-approach">Curvature-Based Approach<a class="anchor" aria-label="anchor" href="#curvature-based-approach"></a>
 </h3>
+<p>We first compute the second derivative across the concentration range
+for all curves then select a <code>curve_id</code> of interest for
+comparision.:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d2_natural</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_second_deriv_df.html">compute_second_deriv_df</a></span><span class="op">(</span>curves_df <span class="op">=</span> <span class="va">curves_nat</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d2_natural</span><span class="op">)</span></span>
@@ -287,8 +355,8 @@ comparison.</p>
 <span></span>
 <span><span class="fu"><a href="../reference/compare_second_derivative.html">compare_second_derivative</a></span><span class="op">(</span>second_derivative_df <span class="op">=</span> <span class="va">d2_natural</span>, curve_id <span class="op">=</span> <span class="va">curve_id</span><span class="op">)</span></span></code></pre></div>
 <p><img src="Workflow_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" alt="" width="100%"></p>
-<p>Calculate the shaped-based Limits of Quantification (LOQs) from the
-second derivative</p>
+<p>We then calculate the shaped-based Limits of Quantification (LOQs)
+from the second derivative profile for all curves:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">loqs_nat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_loqs.html">compute_loqs</a></span><span class="op">(</span><span class="va">curves_nat</span>, second_deriv_df <span class="op">=</span> <span class="va">d2_natural</span>, verbose <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">loqs_nat</span><span class="op">)</span></span>
@@ -304,9 +372,12 @@ second derivative</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="attach-quality-metrics-to-the-original-curve-dataframe-for-plotting-and-uploading-back-to-database-">Attach Quality metrics to the original curve dataframe for plotting
-and uploading back to database.<a class="anchor" aria-label="anchor" href="#attach-quality-metrics-to-the-original-curve-dataframe-for-plotting-and-uploading-back-to-database-"></a>
+<h2 id="quality-control-summary-amd-comparision">Quality Control Summary amd Comparision<a class="anchor" aria-label="anchor" href="#quality-control-summary-amd-comparision"></a>
 </h2>
+<p>All quality control metrics computed above are attached to the
+original curve data frame. The enriched object
+(<code>curves_quality_df</code>) is suitable for both visualization and
+uploading results back to the database.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">curves_quality_df</span> <span class="op">&lt;-</span><span class="fu"><a href="../reference/attach_quality_metrics.html">attach_quality_metrics</a></span><span class="op">(</span>curves_df <span class="op">=</span> <span class="va">curves_df</span>,</span>
 <span>                                           lods <span class="op">=</span> <span class="va">lods_nat</span>, </span>
@@ -344,6 +415,8 @@ and uploading back to database.<a class="anchor" aria-label="anchor" href="#atta
 <span><span class="co">#&gt; 4 0.09357620</span></span>
 <span><span class="co">#&gt; 5 0.07652535</span></span>
 <span><span class="co">#&gt; 6 0.07943149</span></span></code></pre></div>
+<p>Quality Control thresholds and limits for a curve can be plotted
+enabling a comparison of Frequentist and Bayesian fits.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/compare_quality_metrics.html">compare_quality_metrics</a></span><span class="op">(</span><span class="va">curves_nat</span>, <span class="va">standards</span>, <span class="va">curves_quality_df</span>, curve_id <span class="op">=</span> <span class="va">curve_id</span><span class="op">)</span></span></code></pre></div>
 <p><img src="Workflow_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="100%"></p>
