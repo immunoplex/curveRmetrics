@@ -192,22 +192,22 @@ freq_param_ci_nat <- transform_ci_to_natural_units(freq_param_ci_df)
 
 params_ci_nat <- rbind(freq_param_ci_nat, bayes_param_ci_nat)
 params_ci_nat
-#> # A tibble: 102 × 12
-#>    curve_id method model_name converged parameter estimate conf_lower conf_upper
-#>     <int64> <chr>  <chr>      <lgl>     <chr>        <dbl>      <dbl>      <dbl>
-#>  1    74233 frequ… logistic4  TRUE      AIC        -46.9      -46.9     -46.9   
-#>  2    74233 frequ… logistic4  TRUE      a           -1.31      -1.37     -1.25  
-#>  3    74233 frequ… logistic4  TRUE      b            0.288      0.235     0.341 
-#>  4    74233 frequ… logistic4  TRUE      c            1.89       1.83      1.95  
-#>  5    74233 frequ… logistic4  TRUE      d            0.528      0.469     0.588 
-#>  6    74234 frequ… logistic5  TRUE      AIC        -67.1      -67.1     -67.1   
-#>  7    74234 frequ… logistic5  TRUE      a           -1.47      -1.50     -1.45  
-#>  8    74234 frequ… logistic5  TRUE      b            0.156     -0.138     0.449 
-#>  9    74234 frequ… logistic5  TRUE      c            2.56       1.93      3.19  
-#> 10    74234 frequ… logistic5  TRUE      d           -0.558     -1.18      0.0663
-#> # ℹ 92 more rows
-#> # ℹ 4 more variables: is_best_model <lgl>, estimate_nat <dbl>,
-#> #   conf_lower_nat <dbl>, conf_upper_nat <dbl>
+#> # A tibble: 77 × 10
+#>    curve_id method      model_name parameter estimate conf_lower conf_upper
+#>     <int64> <chr>       <chr>      <chr>        <dbl>      <dbl>      <dbl>
+#>  1    74233 frequentist logistic4  AIC        -46.9      -46.9     -46.9   
+#>  2    74233 frequentist logistic4  a           -1.31      -1.37     -1.25  
+#>  3    74233 frequentist logistic4  b            0.288      0.235     0.341 
+#>  4    74233 frequentist logistic4  c            1.89       1.83      1.95  
+#>  5    74233 frequentist logistic4  d            0.528      0.469     0.588 
+#>  6    74234 frequentist logistic5  AIC        -67.1      -67.1     -67.1   
+#>  7    74234 frequentist logistic5  a           -1.47      -1.50     -1.45  
+#>  8    74234 frequentist logistic5  b            0.156     -0.138     0.449 
+#>  9    74234 frequentist logistic5  c            2.56       1.93      3.19  
+#> 10    74234 frequentist logistic5  d           -0.558     -1.18      0.0663
+#> # ℹ 67 more rows
+#> # ℹ 3 more variables: estimate_nat <dbl>, conf_lower_nat <dbl>,
+#> #   conf_upper_nat <dbl>
 ```
 
 The limits of detection are then calculated.
@@ -228,14 +228,9 @@ lods_nat <- generate_lods(param_ci_df = params_ci_nat, verbose = T)
 #> [generate_lods] curve_id=74236 (bayesian)  LLOD=0.0345  ULOD=0.0929
 #> [generate_lods] curve_id=74238 (bayesian)  LLOD=0.0353  ULOD=0.1453
 #> [generate_lods] curve_id=74240 (bayesian)  LLOD=0.0341  ULOD=0.1566
-#> [generate_lods] curve_id=74241 (bayesian)  LLOD=0.0342  ULOD=0.1344
-#> [generate_lods] curve_id=75375 (bayesian)  LLOD=0.0206  ULOD=3.2008
-#> [generate_lods] curve_id=75376 (bayesian)  LLOD=0.0179  ULOD=4.5332
-#> [generate_lods] curve_id=75377 (bayesian)  LLOD=0.0175  ULOD=4.2726
-#> [generate_lods] curve_id=75378 (bayesian)  LLOD=0.0235  ULOD=3.8320
-#> [generate_lods] curve_id=75379 (bayesian)  LLOD=0.0178  ULOD=3.5991
+#> [generate_lods] curve_id=74241 (bayesian)  LLOD=0.0341  ULOD=0.1294
 lods_nat
-#> # A tibble: 20 × 4
+#> # A tibble: 15 × 4
 #>    curve_id method        llod   ulod
 #>     <int64> <chr>        <dbl>  <dbl>
 #>  1    74233 frequentist 0.0557 2.94  
@@ -252,12 +247,7 @@ lods_nat
 #> 12    74236 bayesian    0.0345 0.0929
 #> 13    74238 bayesian    0.0353 0.145 
 #> 14    74240 bayesian    0.0341 0.157 
-#> 15    74241 bayesian    0.0342 0.134 
-#> 16    75375 bayesian    0.0206 3.20  
-#> 17    75376 bayesian    0.0179 4.53  
-#> 18    75377 bayesian    0.0175 4.27  
-#> 19    75378 bayesian    0.0235 3.83  
-#> 20    75379 bayesian    0.0178 3.60
+#> 15    74241 bayesian    0.0341 0.129
 ```
 
 ## Reliable Detection Limits

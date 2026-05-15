@@ -28,7 +28,7 @@ get_freq_curves <- function(con = get_db_connection(), study_accession) {
     ON curve_lookup.curve_id = freq_curves.curve_id
     WHERE curve_lookup.study_accession = {study_accession};
   ",  .con = con)
-
+  
   # Pull the whole result set into a tibble (data.frame)
   DBI::dbGetQuery(con, sql) %>% as_tibble()
 }
@@ -52,91 +52,90 @@ get_bayes_curves <- function(con = get_db_connection(), study_accession) {
     ON curve_lookup.curve_id = bayes_curves.curve_id
     WHERE curve_lookup.study_accession = {study_accession};
   ",  .con = con)
-
+  
   DBI::dbGetQuery(con, sql) %>% as_tibble()
 }
 
 
 get_freq_parameters <- function(con = get_db_connection()) {
   sql <- "
-SELECT  curve_id, 'frequentist' AS method, model_name, converged, parameter, estimate, conf_lower, conf_upper, is_best_model
+SELECT  curve_id, 'frequentist' AS method, model_name, parameter, estimate, conf_lower, conf_upper
 	FROM madi_results.freq_candidate_parameters
 	WHERE is_best_model = true;
   "
   DBI::dbGetQuery(con, sql) %>% as_tibble()
-
+  
 }
 
 get_bayes_param_ci  <- function(con = get_db_connection(), study_accession) {
-  sql <- glue::glue_sql("WITH base AS (
-  SELECT *
-  FROM madi_results.bayes_ensemble
-  WHERE is_global_best = true
-)
-SELECT
-  base.curve_id,
-  'bayesian' AS method,
-  family AS model_name,
-  TRUE AS converged,
-  v.parameter,
-  v.estimate,
-  v.conf_lower,
-  v.conf_upper,
-  TRUE AS is_best_model
-FROM base
-INNER JOIN madi_results.curve_lookup
-    ON curve_lookup.curve_id = base.curve_id
-CROSS JOIN LATERAL (
-  VALUES
-    ('a', a, a_lower, a_upper),
-    ('b', b, b_lower, b_upper),
-    ('c', c, c_lower, c_upper),
-    ('d', d, d_lower, d_upper),
-    ('g', g, g_lower, g_upper)
-) AS v(parameter, estimate, conf_lower, conf_upper)
-WHERE curve_lookup.study_accession = {study_accession};",  .con = con)
+  sql <- glue::glue_sql("SELECT curve_id,
+    family AS model_name,
+    'bayesian' as method,
+    parameter,
+    estimate,
+    conf_lower,
+    conf_upper
 
-#    sql <- glue::glue_sql("WITH ensemble AS (
-#   SELECT *
-#   FROM madi_results.bayes_ensemble
-#   -- WHERE is_global_best = true
-# ),
-# best_models AS (
-#   SELECT curve_id, curve_family
-#   FROM madi_results.bayes_curves
-# )
-# SELECT
-#   ensemble.curve_id,
-#   'bayesian'         AS method,
-#   ensemble.family    AS model_name,
-#   TRUE               AS converged,
-#   v.parameter,
-#   v.estimate,
-#   v.conf_lower,
-#   v.conf_upper,
-#   TRUE               AS is_best_model
-# FROM ensemble
-# INNER JOIN best_models
-#   ON  best_models.curve_id     = ensemble.curve_id
-#   AND best_models.curve_family = ensemble.family
-# INNER JOIN madi_results.curve_lookup
-#   ON curve_lookup.curve_id = ensemble.curve_id
-# CROSS JOIN LATERAL (
-#   VALUES
-#     ('a', ensemble.a, ensemble.a_lower, ensemble.a_upper),
-#     ('b', ensemble.b, ensemble.b_lower, ensemble.b_upper),
-#     ('c', ensemble.c, ensemble.c_lower, ensemble.c_upper),
-#     ('d', ensemble.d, ensemble.d_lower, ensemble.d_upper),
-#     ('g', ensemble.g, ensemble.g_lower, ensemble.g_upper)
-# ) AS v(parameter, estimate, conf_lower, conf_upper)
-# WHERE curve_lookup.study_accession = {study_accession}",  .con = con)
-DBI::dbGetQuery(con, sql) %>% as_tibble()
+	FROM  (
+SELECT DISTINCT ON (plateid, parameter)
+    plateid,
+    plate_elpd,
+    curve_id,
+    family,
+    parameter,
+    estimate,
+    conf_lower,
+    conf_upper
+FROM madi_results.bayes_ensemble
+CROSS JOIN LATERAL (
+    VALUES
+        ('a', a, a_lower, a_upper),
+        ('b', b, b_lower, b_upper),
+        ('c', c, c_lower, c_upper),
+        ('d', d, d_lower, d_upper),
+        ('g', g, g_lower, g_upper)
+) AS params(parameter, estimate, conf_lower, conf_upper)
+WHERE study_accession = {study_accession}
+ORDER BY plateid, parameter, plate_elpd DESC
+
+	) AS a
+;", ,  .con = con)
+  #   sql <- glue::glue_sql("WITH base AS (
+  #   SELECT *
+  #   FROM madi_results.bayes_ensemble
+  #   WHERE is_global_best = true
+  # )
+  # SELECT
+  #   base.curve_id,
+  #   'bayesian' AS method,
+  #   family AS model_name,
+  #   TRUE AS converged,
+  #   v.parameter,
+  #   v.estimate,
+  #   v.conf_lower,
+  #   v.conf_upper,
+  #   TRUE AS is_best_model
+  # FROM base
+  # INNER JOIN madi_results.curve_lookup
+  #     ON curve_lookup.curve_id = base.curve_id
+  # CROSS JOIN LATERAL (
+  #   VALUES
+  #     ('a', a, a_lower, a_upper),
+  #     ('b', b, b_lower, b_upper),
+  #     ('c', c, c_lower, c_upper),
+  #     ('d', d, d_lower, d_upper),
+  #     ('g', g, g_lower, g_upper)
+  # ) AS v(parameter, estimate, conf_lower, conf_upper)
+  # WHERE curve_lookup.study_accession = {study_accession};",  .con = con)
+  # 
+  
+  DBI::dbGetQuery(con, sql) %>% as_tibble()
 }
 
 
 get_freq_parameters <- function(con = get_db_connection(), study_accession) {
   sql <- glue::glue_sql("
-SELECT  base.curve_id, 'frequentist' AS method, model_name, converged, parameter, estimate, conf_lower, conf_upper, is_best_model
+SELECT  base.curve_id, 'frequentist' AS method, model_name, parameter, estimate, conf_lower, conf_upper
 	FROM madi_results.freq_candidate_parameters as base
 	INNER JOIN madi_results.curve_lookup
     ON curve_lookup.curve_id = base.curve_id
@@ -144,7 +143,7 @@ SELECT  base.curve_id, 'frequentist' AS method, model_name, converged, parameter
 	AND curve_lookup.study_accession = {study_accession};
   ",  .con = con)
   DBI::dbGetQuery(con, sql) %>% as_tibble()
-
+  
 }
 
 
@@ -195,9 +194,9 @@ xmap_standard.antigen, antibody_mfi AS assay_response, xmap_standard.feature
 	WHERE curve_lookup.study_accession = {study_accession}
 	;
   ",  .con = con)
-
-
-
+  
+  
+  
   DBI::dbGetQuery(con, sql) %>% as_tibble()
 }
 
