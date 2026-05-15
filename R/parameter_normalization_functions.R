@@ -66,15 +66,15 @@
 #' @importFrom dplyr mutate case_when
 #' @export
 transform_to_natural_units <- function(df) {
-
+  
   LN10 <- log(10)   # approximately 2.302585 - conversion factor between log bases
-
+  
   df$model_name <- vapply(
     df$model_name,
     .canonical_family,
     character(1)
   )
-
+  
   df %>%
     mutate(
       c_nat = case_when(
@@ -128,10 +128,10 @@ transform_to_natural_units <- function(df) {
 #'   \code{c}, \code{d}, \code{g}, and \code{source}.
 #' @keywords internal
 .normalise_params <- function(row, method, verbose = FALSE) {
-
+  
   family  <- .canonical_family(row$model_name)
   has_nat <- all(c("a_nat", "b_nat", "c_nat", "d_nat", "g_nat") %in% names(row))
-
+  
   if (has_nat) {
     if (verbose) message("Using natural scale parameters...")
     return(list(
@@ -144,14 +144,14 @@ transform_to_natural_units <- function(df) {
       source = method
     ))
   }
-
+  
   LN10  <- log(10)
   a_raw <- as.numeric(row$a)
   b_raw <- as.numeric(row$b)
   c_raw <- as.numeric(row$c)
   d_raw <- as.numeric(row$d)
   g_raw <- ifelse(is.na(row$g), 1, as.numeric(row$g))
-
+  
   if (method == "frequentist") {
     list(
       family = family,
@@ -200,10 +200,10 @@ transform_to_natural_units <- function(df) {
 #'   vector).
 #' @keywords internal
 .pivot_curve_row <- function(curve_rows, verbose = FALSE) {
-
+  
   param_rows <- curve_rows[curve_rows$parameter %in% c("a", "b", "c", "d", "g"), ]
   has_nat    <- "estimate_nat" %in% names(param_rows)
-
+  
   if (verbose) {
     if (has_nat) {
       message("using natural scale parameters...")
@@ -211,11 +211,11 @@ transform_to_natural_units <- function(df) {
       message("not using natural parameters...")
     }
   }
-
+  
   est  <- setNames(if (has_nat) param_rows$estimate_nat   else param_rows$estimate,   param_rows$parameter)
   low  <- setNames(if (has_nat) param_rows$conf_lower_nat else param_rows$conf_lower, param_rows$parameter)
   high <- setNames(if (has_nat) param_rows$conf_upper_nat else param_rows$conf_upper, param_rows$parameter)
-
+  
   list(
     curve_id   = curve_rows$curve_id[[1]],
     method     = curve_rows$method[[1]],
@@ -323,17 +323,17 @@ transform_to_natural_units <- function(df) {
 #'   cannot be satisfied.
 #' @keywords internal
 .inflection_x <- function(p) {
-
+  
   b <- p$b
   g <- p$g
   c <- p$c
-
+  
   switch(p$family,
-
+         
          "logistic4" = {
            c
          },
-
+         
          "logistic5" = {
            if (b <= 1) warning(sprintf(
              "[.inflection_x] logistic5: b = %.4f <= 1; inflection point may be unreliable.", b
@@ -345,11 +345,11 @@ transform_to_natural_units <- function(df) {
            }
            c * z_star^(1 / b)
          },
-
+         
          "loglogistic4" = {
            c
          },
-
+         
          "loglogistic5" = {
            if (b <= 1) warning(sprintf(
              "[.inflection_x] loglogistic5: b = %.4f <= 1; inflection point may be unreliable.", b
@@ -361,7 +361,7 @@ transform_to_natural_units <- function(df) {
            }
            c * exp((log(g) - log(u_star)) / b)
          },
-
+         
          "gompertz4" = {
            if (b <= 1) {
              warning(sprintf(
@@ -372,7 +372,7 @@ transform_to_natural_units <- function(df) {
            u_star <- (b - 1) / b
            c * exp(-log(u_star) / b)
          },
-
+         
          stop(sprintf("[.inflection_x] Unsupported family: '%s'", p$family), call. = FALSE)
   )
 }
@@ -396,11 +396,11 @@ transform_to_natural_units <- function(df) {
 #'   condition cannot be evaluated.
 #' @keywords internal
 .inflect_x_analytical <- function(p, method) {
-
+  
   a <- p$a; b <- p$b; c <- p$c; d <- p$d; g <- p$g
-
+  
   if (method == "frequentist") {
-
+    
     switch(p$family,
            "logistic4" = {
              10^c
@@ -424,11 +424,11 @@ transform_to_natural_units <- function(df) {
            },
            stop(sprintf("[.inflect_x_analytical] Unsupported family: '%s'", p$family))
     )
-
+    
   } else {
-
+    
     y_target <- sqrt(a * d)
-
+    
     switch(p$family,
            "logistic4" = ,
            "logistic5" = {
@@ -482,32 +482,32 @@ transform_to_natural_units <- function(df) {
 #' }
 #' @export
 compute_inflection_point_worker <- function(row, verbose = TRUE) {
-
+  
   method <- row$method
   p      <- .normalise_params(row, method)
-
+  
   if (verbose)
     message(sprintf(
       "[compute_inflection_point] family=%s source=%s a=%.4f b=%.4f c=%.4f d=%.4f g=%.4f",
       p$family, p$source, p$a, p$b, p$c, p$d, p$g
     ))
-
+  
   inflect_x <- tryCatch(
     .inflection_x(p),
     error = function(e) { warning(e$message); NA_real_ }
   )
-
+  
   inflect_y <- tryCatch(
     .evaluate_curve(p, inflect_x),
     error = function(e) { warning(e$message); NA_real_ }
   )
-
+  
   if (verbose)
     message(sprintf(
       "[compute_inflection_point] inflect_x=%.6f inflect_y=%.6f",
       inflect_x, inflect_y
     ))
-
+  
   list(
     inflect_x = as.numeric(inflect_x),
     inflect_y = as.numeric(inflect_y),
@@ -544,16 +544,16 @@ compute_inflection_point_worker <- function(row, verbose = TRUE) {
 #' @importFrom tibble tibble
 #' @export
 compute_inflection_point <- function(curves_df, verbose = TRUE) {
-
+  
   keys <- unique(curves_df[, c("curve_id", "method")])
-
+  
   results <- purrr::map(seq_len(nrow(keys)), function(i) {
-
+    
     cid    <- keys$curve_id[[i]]
     method <- keys$method[[i]]
     row    <- curves_df[curves_df$curve_id == cid & curves_df$method == method, ]
     family <- .canonical_family(row$model_name)
-
+    
     p <- if (method == "frequentist") {
       list(family = family,
            a = as.numeric(row$a),
@@ -569,7 +569,7 @@ compute_inflection_point <- function(curves_df, verbose = TRUE) {
            d = as.numeric(row$d_nat),
            g = as.numeric(row$g_nat))
     }
-
+    
     inflect_x <- tryCatch(
       .inflect_x_analytical(p, method),
       error = function(e) {
@@ -578,27 +578,27 @@ compute_inflection_point <- function(curves_df, verbose = TRUE) {
         NA_real_
       }
     )
-
+    
     inflect_y <- tryCatch({
       if (method == "frequentist")
         10^.evaluate_curve(p, log10(inflect_x))
       else
         .evaluate_curve(p, log(inflect_x))
     }, error = function(e) { warning(e$message); NA_real_ })
-
+    
     if (verbose)
       message(sprintf(
         "[compute_inflection_point] curve_id=%s (%s)  inflect_x=%.4f  inflect_y=%.4f",
         cid, method, inflect_x, inflect_y
       ))
-
+    
     tibble::tibble(
       curve_id  = cid, method    = method,
       inflect_x = as.numeric(inflect_x),
       inflect_y = as.numeric(inflect_y)
     )
   })
-
+  
   dplyr::bind_rows(results) %>%
     { dplyr::left_join(
       dplyr::select(curves_df, -dplyr::any_of(c("inflect_x", "inflect_y"))),
@@ -628,13 +628,13 @@ compute_inflection_point <- function(curves_df, verbose = TRUE) {
 #' @importFrom tibble tibble
 #' @export
 compute_assay_sensitivity <- function(curves_df, verbose = TRUE) {
-
+  
   results <- purrr::map(seq_len(nrow(curves_df)), function(i) {
-
+    
     row  <- curves_df[i, ]
     p    <- .normalise_params(row, row$method)
     ix   <- as.numeric(row$inflect_x)
-
+    
     dydx <- tryCatch({
       if (!is.na(ix)) {
         h <- if (abs(ix) > 0) abs(ix) * 1e-5 else 1e-8
@@ -647,13 +647,13 @@ compute_assay_sensitivity <- function(curves_df, verbose = TRUE) {
                                    row$curve_id, e$message))
       NA_real_
     })
-
+    
     if (verbose)
       message(sprintf(
         "[compute_assay_sensitivity] curve_id=%s (%s)  inflect_x=%.4f  dydx=%.6f",
         row$curve_id, row$method, ix, dydx
       ))
-
+    
     tibble::tibble(
       curve_id     = row$curve_id,
       method       = row$method,
@@ -661,7 +661,7 @@ compute_assay_sensitivity <- function(curves_df, verbose = TRUE) {
       dydx_inflect = as.numeric(dydx)
     )
   })
-
+  
   dplyr::bind_rows(results)
 }
 
@@ -692,21 +692,21 @@ compute_assay_sensitivity <- function(curves_df, verbose = TRUE) {
 #' @importFrom tibble tibble
 #' @export
 generate_lods <- function(param_ci_df, verbose = FALSE) {
-
-  best_df <- param_ci_df[param_ci_df$is_best_model, ]
+  
+  best_df <- param_ci_df #[param_ci_df$is_best_model, ]
   keys    <- unique(best_df[, c("curve_id", "method")])
-
+  
   results <- purrr::map(seq_len(nrow(keys)), function(i) {
-
+    
     cid    <- keys$curve_id[[i]]
     method <- keys$method[[i]]
-
+    
     rows <- best_df[best_df$curve_id == cid & best_df$method == method, ]
     row  <- .pivot_curve_row(rows)
-
+    
     ulod <- as.numeric(row$ci_lower["d"])
     llod <- as.numeric(row$ci_upper["a"])
-
+    
     if (is.na(ulod) || is.na(llod) || ulod < llod) {
       if (verbose)
         message(sprintf(
@@ -715,17 +715,17 @@ generate_lods <- function(param_ci_df, verbose = FALSE) {
         ))
       ulod <- NA_real_
     }
-
+    
     if (verbose)
       message(sprintf(
         "[generate_lods] curve_id=%s (%s)  LLOD=%.4f  ULOD=%s",
         cid, method, llod,
         if (is.na(ulod)) "NA" else sprintf("%.4f", ulod)
       ))
-
+    
     tibble::tibble(curve_id = cid, method = method, llod = llod, ulod = ulod)
   })
-
+  
   dplyr::bind_rows(results)
 }
 
@@ -744,29 +744,29 @@ generate_lods <- function(param_ci_df, verbose = FALSE) {
 #' @keywords internal
 .invert_curve <- function(p, y) {
   a <- p$a; b <- p$b; c <- p$c; d <- p$d; g <- p$g
-
+  
   switch(p$family,
-
+         
          "logistic4" = {
            c * ((a - d) / (y - d) - 1)^b
          },
-
+         
          "logistic5" = {
            c * (((a - d) / (y - d))^(1 / g) - 1)^b
          },
-
+         
          "loglogistic4" = {
            c * ((d - a) / (y - a) - 1)^(1 / b)
          },
-
+         
          "loglogistic5" = {
            c * exp((log(g) - log(((y - a) / (d - a))^(-g) - 1)) / b)
          },
-
+         
          "gompertz4" = {
            c * exp(-log(-log((y - a) / (d - a))) / b)
          },
-
+         
          stop(sprintf("[.invert_curve] Unsupported family: '%s'", p$family), call. = FALSE)
   )
 }
@@ -806,18 +806,18 @@ generate_lods <- function(param_ci_df, verbose = FALSE) {
 #' @importFrom tibble tibble
 #' @export
 compute_mdc_rdl <- function(param_ci_df, lods, verbose = TRUE) {
-
-  best_df <- param_ci_df[param_ci_df$is_best_model, ]
+  
+  best_df <- param_ci_df #[param_ci_df$is_best_model, ]
   keys    <- unique(best_df[, c("curve_id", "method")])
-
+  
   results <- purrr::map(seq_len(nrow(keys)), function(i) {
-
+    
     cid    <- keys$curve_id[[i]]
     method <- keys$method[[i]]
-
+    
     rows <- best_df[best_df$curve_id == cid & best_df$method == method, ]
     row  <- .pivot_curve_row(rows)
-
+    
     p <- list(
       family = .canonical_family(row$model_name),
       a      = row$a,
@@ -827,43 +827,43 @@ compute_mdc_rdl <- function(param_ci_df, lods, verbose = TRUE) {
       g      = ifelse(is.na(row$g), 1, row$g),
       source = method
     )
-
+    
     lod_row <- lods[lods$curve_id == cid & lods$method == method, ]
     llod    <- as.numeric(lod_row$llod)
     ulod    <- as.numeric(lod_row$ulod)
-
+    
     y_lo <- min(p$a, p$d)
     y_hi <- max(p$a, p$d)
-
+    
     safe_invert <- function(params, y) {
       if (is.na(y) || y < y_lo || y > y_hi) return(NA_real_)
       tryCatch(.invert_curve(params, y), error = function(e) NA_real_)
     }
-
+    
     mindc <- safe_invert(p, llod)
     maxdc <- safe_invert(p, ulod)
-
+    
     p_lo <- modifyList(p, list(d = as.numeric(row$ci_lower["d"])))
     p_hi <- modifyList(p, list(d = as.numeric(row$ci_upper["d"])))
-
+    
     y_lo_rdl_min <- min(p_lo$a, p_lo$d)
     y_hi_rdl_min <- max(p_lo$a, p_lo$d)
     y_lo_rdl_max <- min(p_hi$a, p_hi$d)
     y_hi_rdl_max <- max(p_hi$a, p_hi$d)
-
+    
     safe_invert_lo <- function(y) {
       if (is.na(y) || y < y_lo_rdl_min || y > y_hi_rdl_min) return(NA_real_)
       tryCatch(.invert_curve(p_lo, y), error = function(e) NA_real_)
     }
-
+    
     safe_invert_hi <- function(y) {
       if (is.na(y) || y < y_lo_rdl_max || y > y_hi_rdl_max) return(NA_real_)
       tryCatch(.invert_curve(p_hi, y), error = function(e) NA_real_)
     }
-
+    
     minrdl <- safe_invert_lo(llod)
     maxrdl <- safe_invert_hi(ulod)
-
+    
     if (verbose)
       message(sprintf(
         "[compute_mdc_rdl] curve_id=%s (%s)  mindc=%s  maxdc=%s  minrdl=%s  maxrdl=%s",
@@ -871,7 +871,7 @@ compute_mdc_rdl <- function(param_ci_df, lods, verbose = TRUE) {
         format(mindc,  digits = 4), format(maxdc,  digits = 4),
         format(minrdl, digits = 4), format(maxrdl, digits = 4)
       ))
-
+    
     tibble::tibble(
       curve_id = cid,
       method   = method,
@@ -881,7 +881,7 @@ compute_mdc_rdl <- function(param_ci_df, lods, verbose = TRUE) {
       maxrdl   = as.numeric(maxrdl)
     )
   })
-
+  
   dplyr::bind_rows(results)
 }
 
@@ -918,36 +918,36 @@ compute_mdc_rdl <- function(param_ci_df, lods, verbose = TRUE) {
 #' @importFrom tibble tibble
 #' @export
 compute_loqs <- function(curves_df, second_deriv_df, verbose = TRUE) {
-
+  
   keys <- unique(curves_df[, c("curve_id", "method")])
-
+  
   results <- purrr::map(seq_len(nrow(keys)), function(i) {
-
+    
     cid    <- keys$curve_id[[i]]
     method <- keys$method[[i]]
-
+    
     row    <- curves_df[curves_df$curve_id == cid & curves_df$method == method, ]
     family <- .canonical_family(row$model_name)
-
+    
     p_raw <- list(family = family,
                   a = as.numeric(row$a), b = as.numeric(row$b),
                   c = as.numeric(row$c), d = as.numeric(row$d),
                   g = if (is.na(row$g)) 1 else as.numeric(row$g))
-
+    
     p_nat <- list(family = family,
                   a = as.numeric(row$a_nat), b = as.numeric(row$b_nat),
                   c = as.numeric(row$c_nat), d = as.numeric(row$d_nat),
                   g = as.numeric(row$g_nat))
-
+    
     eval_y <- if (method == "frequentist") {
       function(x) 10^.evaluate_curve(p_raw, log10(x))
     } else {
       function(x) .evaluate_curve(p_nat, log(x))
     }
-
+    
     sd_sub <- second_deriv_df[second_deriv_df$curve_id == cid &
                                 second_deriv_df$method == method, ]
-
+    
     if (nrow(sd_sub) < 3) {
       if (verbose) message(sprintf(
         "[compute_loqs] curve_id=%s (%s): fewer than 3 second deriv points, skipping",
@@ -958,53 +958,53 @@ compute_loqs <- function(curves_df, second_deriv_df, verbose = TRUE) {
         lloq_y = NA_real_, uloq_y = NA_real_
       ))
     }
-
+    
     x <- as.numeric(sd_sub$concentration)
     y <- as.numeric(sd_sub$d2x_y)
-
+    
     dy      <- diff(y)
     idx_max <- which(dy[-1] < 0 & dy[-length(dy)] > 0) + 1
     idx_min <- which(dy[-1] > 0 & dy[-length(dy)] < 0) + 1
-
+    
     interpolate_vertex <- function(idx) {
       xi <- x[(idx - 1):(idx + 1)]
       yi <- y[(idx - 1):(idx + 1)]
-
+      
       x1 <- xi[1]; x2 <- xi[2]; x3 <- xi[3]
       y1 <- yi[1]; y2 <- yi[2]; y3 <- yi[3]
-
+      
       denom <- (x1 - x2) * (x1 - x3) * (x2 - x3)
       if (abs(denom) < .Machine$double.eps * 1e8)
         return(list(x = x2, y = y2))
-
+      
       a_coef <- (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom
       b_coef <- (x3^2 * (y1 - y2) + x2^2 * (y3 - y1) + x1^2 * (y2 - y3)) / denom
-
+      
       if (abs(a_coef) < .Machine$double.eps)
         return(list(x = x2, y = y2))
-
+      
       xv <- -b_coef / (2 * a_coef)
       xv <- max(min(xv, max(xi)), min(xi))
       yv <- a_coef * xv^2 + b_coef * xv + (y1 - a_coef * x1^2 - b_coef * x1)
-
+      
       list(x = as.numeric(xv), y = as.numeric(yv))
     }
-
+    
     max_df <- if (length(idx_max) > 0) {
       verts <- lapply(idx_max, interpolate_vertex)
       data.frame(x = vapply(verts, `[[`, numeric(1), "x"),
                  y = vapply(verts, `[[`, numeric(1), "y"))
     } else data.frame(x = numeric(0), y = numeric(0))
-
+    
     min_df <- if (length(idx_min) > 0) {
       verts <- lapply(idx_min, interpolate_vertex)
       data.frame(x = vapply(verts, `[[`, numeric(1), "x"),
                  y = vapply(verts, `[[`, numeric(1), "y"))
     } else data.frame(x = numeric(0), y = numeric(0))
-
+    
     lloq_x <- if (nrow(max_df) > 0) max_df$x[which.max(max_df$y)] else NA_real_
     uloq_x <- if (nrow(min_df) > 0) min_df$x[which.min(min_df$y)] else NA_real_
-
+    
     lloq_y <- tryCatch(
       if (!is.na(lloq_x)) as.numeric(eval_y(lloq_x)) else NA_real_,
       error = function(e) {
@@ -1014,7 +1014,7 @@ compute_loqs <- function(curves_df, second_deriv_df, verbose = TRUE) {
         NA_real_
       }
     )
-
+    
     uloq_y <- tryCatch(
       if (!is.na(uloq_x)) as.numeric(eval_y(uloq_x)) else NA_real_,
       error = function(e) {
@@ -1024,11 +1024,11 @@ compute_loqs <- function(curves_df, second_deriv_df, verbose = TRUE) {
         NA_real_
       }
     )
-
+    
     if (verbose) message(sprintf(
       "[compute_loqs] curve_id=%s (%s)  lloq_x=%.4f  uloq_x=%.4f  lloq_y=%.4f  uloq_y=%.4f",
       cid, method, lloq_x, uloq_x, lloq_y, uloq_y))
-
+    
     tibble::tibble(
       curve_id = cid,
       method   = method,
@@ -1038,6 +1038,6 @@ compute_loqs <- function(curves_df, second_deriv_df, verbose = TRUE) {
       uloq_y   = as.numeric(uloq_y)
     )
   })
-
+  
   dplyr::bind_rows(results)
 }
